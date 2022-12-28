@@ -1,9 +1,39 @@
 import requests
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ResultSet, Tag
 import json
 
 URL = "https://www.vz.lt/visos-naujienos?pageno="
 data = {}
+
+
+def get_response(url: str) -> requests.Response:
+    r = requests.get(url=url)
+    return r
+
+
+def get_articles_in_page(r: requests.Response) -> ResultSet[Tag]:
+    soup = BeautifulSoup(r.text, 'html.parser')
+    articles = soup.select('div.one-article div.txt-wr > a')
+    return articles
+
+
+def get_article_details(article: Tag) -> dict[str, str]:
+    article_details = {
+        'title': str(article.get('title')),
+        'href': str(article.get('href'))
+    }
+    return article_details
+
+
+def combine_article_details(articles: ResultSet[Tag]) -> dict[int, dict]:
+    data = {}
+    i = 0
+    for article in articles:
+        article_details = get_article_details(article=article)
+        data[i] = article_details
+        i += 1
+
+    return data
 
 
 def get_articles(page_no):
