@@ -33,11 +33,13 @@ class NewsScraper:
         return article_details
 
 
-    def _combine_article_details(self, articles: ResultSet[Tag]) -> dict[int, dict]:
-        for count, article in enumerate(articles):
-            article_details = self._get_article_details(article=article)
-            self.data[count] = article_details
-        return self.data
+    def _combine_article_details(self, articles: ResultSet[Tag], number: int):
+         for count, article in enumerate(articles):
+             if len(self.data) >= number:
+                break
+             else:
+                article_details = self._get_article_details(article=article)
+                self.data[count] = article_details
 
 
     def _format_data_to_json(self):
@@ -45,15 +47,28 @@ class NewsScraper:
         return formatted_json
 
 
-    def _create_results_file(self, formatted_json):
-        with open('results.json', "a", encoding='utf-8') as f:
+    def _create_results_file(self, path: str):
+        formatted_json = self._format_data_to_json()
+        with open(path, "a", encoding='utf-8') as f:
             f.write(formatted_json)
 
-    def get_news_articles_output(self, path: str, page: str):
-        pass
+
+    def _get_one_page_data(self, page: str, number: int):
+        # TODO: need to check if first run or not
+        r = self._get_response(page=page)
+        articles = self._get_articles_in_page(r=r)
+        self._combine_article_details(articles=articles, number=number)
+
+
+    def get_news_articles_json(self, path: str, page: str, number: int):
+        self._get_one_page_data(page=page, number=number)
+        if len(self.data) < number:
+            self._get_one_page_data(page=page, number=number)
+        self._create_results_file(path=path)
 
 def main():
-    pass    
+    scraper = NewsScraper()
+    scraper.get_news_articles_json(path='./results.json', page="vz", number=15)
 
 if __name__ == "__main__":
     main()
