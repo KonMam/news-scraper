@@ -2,84 +2,58 @@ import requests
 from bs4 import BeautifulSoup, ResultSet, Tag
 import json
 
-URL = "https://www.vz.lt/visos-naujienos?pageno="
-data = {}
 
+class NewsScraper:
 
-def get_response(url: str) -> requests.Response:
-    r = requests.get(url=url)
-    return r
-
-
-def get_articles_in_page(r: requests.Response) -> ResultSet[Tag]:
-    soup = BeautifulSoup(r.text, 'html.parser')
-    articles = soup.select('div.one-article div.txt-wr > a')
-    return articles
-
-
-def get_article_details(article: Tag) -> dict[str, str]:
-    article_details = {
-        'title': str(article.get('title')),
-        'href': str(article.get('href'))
-    }
-    return article_details
-
-
-def combine_article_details(articles: ResultSet[Tag]) -> dict[int, dict]:
-    data = {}
-    i = 0
-    for article in articles:
-        article_details = get_article_details(article=article)
-        data[i] = article_details
-        i += 1
-
-    return data
-
-
-def get_articles(page_no):
-    page_url = URL + str(page_no)
-    r = requests.get(url=page_url)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    articles = soup.select('div.one-article div.txt-wr > a')
-    return articles
-
-
-def create_article_dictionary(articles):
-    try:
-        i = int(list(data)[-1])
-    except IndexError:
-        i = 0
-
-    for article in articles:
-        data[i] = {
-            'title': str(article.get('title')),
-            'href': str(article.get('href'))
+    def __init__(self):
+        self.URL = {
+            "vz": "https://www.vz.lt/visos-naujienos?pageno=0",
+            "15min": "https://www.15min.lt/naujienos",
+            "delfi": "https://www.delfi.lt/archive/latest.php?query=&tod=31.12.2022&fromd=30.12.2022"
         }
-        i += 1
+        self.data = {}
 
 
-def format_data_to_json(data):
-    formatted_json = json.dumps(data, indent=4, ensure_ascii=False)
-    return formatted_json
+    def _get_response(self, page: str) -> requests.Response:
+        r = requests.get(url=self.URL[page])
+        return r
 
 
-def create_results_file(formatted_json):
-    if data:
-        f = open('results.json', "a", encoding='utf-8')
-        f.write(formatted_json)
-        f.close()
+    def _get_articles_in_page(self, r: requests.Response) -> ResultSet[Tag]:
+        soup = BeautifulSoup(r.text, 'html.parser')
+        articles = soup.select('div.one-article div.txt-wr > a')
+        return articles
 
+
+    def _get_article_details(self, article: Tag) -> dict[str, str]:
+        article_details = {
+                'title': str(article.get('title')),
+                'href': str(article.get('href'))
+                }
+        return article_details
+
+
+    def _combine_article_details(self, articles: ResultSet[Tag]) -> dict[int, dict]:
+        for count, article in enumerate(articles):
+            article_details = self._get_article_details(article=article)
+            self.data[count] = article_details
+        return self.data
+
+
+    def _format_data_to_json(self):
+        formatted_json = json.dumps(self.data, indent=4, ensure_ascii=False)
+        return formatted_json
+
+
+    def _create_results_file(self, formatted_json):
+        with open('results.json', "a", encoding='utf-8') as f:
+            f.write(formatted_json)
+
+    def get_news_articles_output(self, path: str, page: str):
+        pass
 
 def main():
-    i = 0
-    while i < 10:
-        articles = get_articles(page_no=i)
-        create_article_dictionary(articles=articles)
-        i += 1
-
-    formatted_json = format_data_to_json(data)
-    create_results_file(formatted_json=formatted_json)
-
+    pass    
 
 if __name__ == "__main__":
     main()
