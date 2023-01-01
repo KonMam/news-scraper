@@ -2,6 +2,31 @@ import requests
 from bs4 import BeautifulSoup, ResultSet, Tag
 import json
 
+class Article:
+    
+    def __init__(self, title, href) -> None:
+       self.title = title
+       self.href = href
+
+    def to_dict(self):
+        return Article.__dict__
+
+    def to_json(self):
+        return json.dumps(Article.__dict__, indent=4)
+
+class ArticleList:
+
+    def __init__(self) -> None:
+        self.array: list[Article] = []
+    
+    def append(self, article: Article):
+        self.array.append(article)
+
+    def get_article_by_id(self, id):
+        return self.array[id]
+
+    def to_json(self):
+        return json.dumps(self.array, indent=4)
 
 class NewsScraper:
 
@@ -64,7 +89,7 @@ class NewsScraper:
         self._get_one_page_data(page=page, number=number)
         if len(self.data) < number:
             self._get_one_page_data(page=page, number=number)
-        self._create_results_file(path=path)
+            self._create_results_file(path=path)
 
 def main():
     scraper = NewsScraper()
