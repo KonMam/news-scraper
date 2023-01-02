@@ -2,14 +2,13 @@ from main import ArticleList, Article
 import json
 
 
-
 def test_article_class():
     article = Article('Title', 'https://link.com')
 
     assert type(article) == Article
     assert article.title == 'Title'
     assert article.href == 'https://link.com'
-    
+
     f = open("./article.json")
     data = json.load(f)
     assert data["title"] == article.title
@@ -40,6 +39,5 @@ def test_article_list():
 
     assert type(article_list.get_article_by_id(0)) == Article
     assert type(article_list) == ArticleList
-    
-    assert article_list.to_json() == json.dumps(article_demo_list, indent=4)
 
+    assert article_list.to_json() == json.dumps(article_demo_list, indent=4)
