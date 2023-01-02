@@ -26,7 +26,7 @@ class ArticleList(list[Article]):
 
 class NewsScraper:
     URL = {
-        "vz": "https://www.vz.lt/visos-naujienos?pageno=0",
+        "vz": "https://www.vz.lt/visos-naujienos?pageno=",
         # "15min": "https://www.15min.lt/naujienos",
         # "delfi": "https://www.delfi.lt/archive/latest.php?query=&tod=31.12.2022&fromd=30.12.2022"
     }
@@ -35,12 +35,12 @@ class NewsScraper:
         self.page = page
         self.results = ArticleList()
 
-    def _get_response(self) -> requests.Response:
-        r = requests.get(url=self.URL[self.page])
+    def _get_response(self, page_no: int) -> requests.Response:
+        r = requests.get(url=f"{self.URL[self.page]}{page_no}")
         return r
 
-    def _get_articles_in_page(self) -> ResultSet[Tag]:
-        r = self._get_response()
+    def _get_articles_in_page(self, page_no: int) -> ResultSet[Tag]:
+        r = self._get_response(page_no)
         soup = BeautifulSoup(r.text, 'html.parser')
         result_set = soup.select('div.one-article div.txt-wr > a')
         return result_set
@@ -50,16 +50,26 @@ class NewsScraper:
                           str(html_tag.get('href')))
         return article
 
-    def get_article_list(self) -> ArticleList:
-        result_set = self._get_articles_in_page()
+    def _append_results(self, result_set: ResultSet[Tag]):
         for html_tag in result_set:
-            self.results.append(self._get_article_details(html_tag=html_tag))
+            self.results.append(
+                self._get_article_details(html_tag=html_tag))
+
+    def get_article_list(self, page_no: int | range | list[int]
+                         ) -> ArticleList:
+        if not isinstance(page_no, int):
+            for number in page_no:
+                result_set = self._get_articles_in_page(page_no=number)
+                self._append_results(result_set=result_set)
+        else:
+            result_set = self._get_articles_in_page(page_no=page_no)
+            self._append_results(result_set=result_set)
         return self.results
 
 
 def main():
     vz_scraper = NewsScraper('vz')
-    results = vz_scraper.get_article_list()
+    results = vz_scraper.get_article_list(page_no=range(10))
     results.write_to_file('results.json')
 
 
