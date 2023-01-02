@@ -5,7 +5,8 @@ import json
 
 class Article:
 
-    def __init__(self, title, href) -> None:
+    def __init__(self, page, title, href) -> None:
+        self.page = page
         self.title = title
         self.href = href
 
@@ -68,13 +69,19 @@ class NewsScraper:
     def _get_article_details(self, html_tag: Tag) -> Article | None:
 
         if self.page in ['vz', '15min']:
-            article = Article(str(html_tag.get('title')),
-                              str(html_tag.get('href')))
+            article = Article(
+                page=self.page,
+                title=str(html_tag.get('title')),
+                href=str(html_tag.get('href'))
+            )
             return article
 
         if self.page in 'delfi':
-            article = Article(html_tag.text,
-                              str(html_tag.get('href')))
+            article = Article(
+                page=self.page,
+                title=html_tag.text,
+                href=str(html_tag.get('href'))
+            )
             return article
 
     def _append_results(self, result_set: ResultSet[Tag]):
