@@ -1,5 +1,6 @@
+from abc import ABC, abstractmethod
 import requests
-from bs4 import BeautifulSoup, ResultSet, Tag
+from bs4 import BeautifulSoup
 import json
 
 
@@ -20,93 +21,79 @@ class ArticleList(list[Article]):
             ensure_ascii=False
         )
 
-    def write_to_file(self, file):
+    def write(self, file):
         with open(file, "a", encoding='utf-8') as f:
             f.write(self._to_json())
 
 
-class NewsScraper:
+class Scraper(ABC):
 
-    # Add offset to 15min for date selection
-    URL = {
-        "vz": "https://www.vz.lt/visos-naujienos?pageno=",
-        "15min": "https://www.15min.lt/naujienos",
-        "delfi": "https://www.delfi.lt/archive/latest.php"
-    }
+    results: ArticleList
+    url: str
 
-    def __init__(self, page):
-        self.page = page
-        self.results = ArticleList()
+    @abstractmethod
+    def get_results(self):
+        pass
 
-    def _get_response(self, page_no: int) -> requests.Response:
-        url = ""
 
-        if self.page == 'vz':
-            url = f"{self.URL[self.page]}{page_no}"
+class VZScraper(Scraper):
 
-        if self.page in ['15min', 'delfi']:
-            url = self.URL[self.page]
+    url = "https://www.vz.lt/visos-naujienos?pageno=0"
+    results = ArticleList()
 
-        r = requests.get(url=url)
-        return r
+    def get_results(self):
+        r = requests.get(url=self.url)
 
-    def _get_articles_in_page(self, page_no: int = 0) -> ResultSet[Tag] | None:
-        r = self._get_response(page_no)
         soup = BeautifulSoup(r.text, 'html.parser')
+        result_set = soup.select('div.one-article div.txt-wr > a')
 
-        if self.page == 'vz':
-            result_set = soup.select('div.one-article div.txt-wr > a')
-            return result_set
-
-        if self.page == '15min':
-            result_set = soup.select('div.visual-list a.vl-img-container')
-            return result_set
-
-        if self.page == 'delfi':
-            result_set = soup.select('a.CBarticleTitle')
-            return result_set
-
-    def _get_article_details(self, html_tag: Tag) -> Article | None:
-
-        if self.page in ['vz', '15min']:
+        for html_tag in result_set:
             article = Article(
-                page=self.page,
+                page="vz",
                 title=str(html_tag.get('title')),
                 href=str(html_tag.get('href'))
             )
-            return article
+            self.results.append(article)
+        return self.results
 
-        if self.page in 'delfi':
+
+class DelfiScraper(Scraper):
+
+    url = "https://www.delfi.lt/archive/latest.php"
+    results = ArticleList()
+
+    def get_results(self):
+        r = requests.get(url=self.url)
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        result_set = soup.select('a.CBarticleTitle')
+
+        for html_tag in result_set:
             article = Article(
-                page=self.page,
+                page="delfi",
                 title=html_tag.text,
                 href=str(html_tag.get('href'))
             )
-            return article
+            self.results.append(article)
+        return self.results
 
-    def _append_results(self, result_set: ResultSet[Tag]):
+
+class MinutesScraper(Scraper):
+
+    url = "https://www.15min.lt/naujienos"
+    results = ArticleList()
+
+    def get_results(self):
+        r = requests.get(url=self.url)
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        result_set = soup.select('div.visual-list a.vl-img-container')
+
         for html_tag in result_set:
-            article = self._get_article_details(html_tag=html_tag)
-
-            if isinstance(article, Article):
-                self.results.append(article)
-
-    def get_article_list(self, page_no: int | range | list[int] = 0
-                         ) -> ArticleList:
-        if self.page == 'vz':
-            if not isinstance(page_no, int):
-                for number in page_no:
-                    result_set = self._get_articles_in_page(page_no=number)
-                    if result_set:
-                        self._append_results(result_set=result_set)
-            else:
-                result_set = self._get_articles_in_page(page_no=page_no)
-                if result_set:
-                    self._append_results(result_set=result_set)
-
-        if self.page in ['15min', 'delfi']:
-            result_set = self._get_articles_in_page()
-            if result_set:
-                self._append_results(result_set=result_set)
-
+            article = Article(
+                page="15min",
+                title=str(html_tag.get('title')),
+                href=str(html_tag.get('href'))
+            )
+            self.results.append(article)
         return self.results

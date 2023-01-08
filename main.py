@@ -1,18 +1,11 @@
-from scraper import NewsScraper
+from scraper import DelfiScraper, MinutesScraper, VZScraper
 
 
 def main():
-    vz_scraper = NewsScraper('delfi')
-    results = vz_scraper.get_article_list()
-    results.write_to_file('results_delfi.json')
 
-    vz_scraper = NewsScraper('15min')
-    results = vz_scraper.get_article_list()
-    results.write_to_file('results_15min.json')
-
-    vz_scraper = NewsScraper('vz')
-    results = vz_scraper.get_article_list()
-    results.write_to_file('results_vz.json')
+    scraper = MinutesScraper()
+    results = scraper.get_results()
+    results.write('minutes_results.json')
 
 
 if __name__ == "__main__":
