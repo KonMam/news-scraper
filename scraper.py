@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import requests
 from bs4 import BeautifulSoup
 import json
+import sqlite
 
 
 class Article:
@@ -21,9 +22,17 @@ class ArticleList(list[Article]):
             ensure_ascii=False
         )
 
-    def write(self, file):
+    def write_to_json(self, file):
         with open(file, "a", encoding='utf-8') as f:
             f.write(self._to_json())
+
+    def write_to_db(self, file):
+        with sqlite.SQLite(file) as curr:
+            for article in self:
+                curr.execute(
+                    "INSERT INTO articles (page, title, href) VALUES(?,?,?)",
+                    [article.page, article.title, article.href]
+                )
 
 
 class Scraper(ABC):
